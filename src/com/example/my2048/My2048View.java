@@ -18,13 +18,47 @@ public class My2048View extends View{
 	private float cellSpace;   //每个格子的大小
 	
 	private Paint paint;
+	private Paint textPaint;
 	private RectF rectf;
+	
+	private int[] colors = {
+			Color.rgb(204, 192, 178), //1
+			Color.rgb(251, 233, 213),  //2
+			Color.rgb(252, 224, 174),  //4
+			Color.rgb(255, 95, 95),   //8
+			Color.rgb(255, 68, 68), //16
+			Color.rgb(248, 58, 58), //32
+			Color.rgb(240, 49, 49), //64
+			Color.rgb(233, 39, 39),  //128
+			Color.rgb(226, 29, 29),  //256
+			Color.rgb(219, 19, 19),  //562
+			Color.rgb(211, 10, 10),  //1024
+			Color.rgb(204, 0, 0)   //2048
+			};
+	
+	private int[][] datas = new int[TOTAL_ROW][TOTAL_COL];
 	
 
 	public My2048View(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		paint = new Paint();
+		textPaint = new Paint();
 		rectf = new RectF();
+		
+		initData();
+	}
+	
+	private void initData(){
+		for(int i=0; i<TOTAL_ROW; i++){
+			for(int j=0; j<TOTAL_COL; j++){
+				int a =  (i+1) * (j+1);
+				if(a < 12){
+					datas[i][j] = a;
+				}else{
+					datas[i][j] = 0;
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -39,6 +73,7 @@ public class My2048View extends View{
 		this.mViewWidth = w;
 		this.mViewHeight = h;
 		cellSpace = ((float)mViewWidth - (TOTAL_COL + 1) * SPACE) / TOTAL_COL;
+		textPaint.setTextSize(cellSpace / 2);
 	}
 
 	private float pointX;
@@ -46,13 +81,26 @@ public class My2048View extends View{
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		paint.setColor(Color.rgb(204, 192, 178));
+		String showNum;
 		for(int i=0; i<TOTAL_ROW; i++){
 			for(int j=0; j<TOTAL_COL; j++){
 				pointX = SPACE * (j + 1) + j * cellSpace;
 				pointY = SPACE * (i + 1) + i * cellSpace;
+				//绘制背景
 				rectf.set(pointX, pointY, pointX + cellSpace, pointY + cellSpace);
+				paint.setColor(colors[datas[i][j]]);
 				canvas.drawRect(rectf, paint);
+				if(datas[i][j] != 0){
+					//绘制数字
+					if(datas[i][j] == 1 || datas[i][j] == 2){
+						textPaint.setColor(Color.rgb(0, 0, 0));
+					}else{
+						textPaint.setColor(Color.rgb(255, 255, 255));
+					}
+					showNum = (int)Math.pow(2, datas[i][j]) + "";
+					canvas.drawText(showNum, pointX + (cellSpace - textPaint.measureText(showNum)) / 2,
+							pointY + (cellSpace + textPaint.measureText(showNum, 0, 1)) / 2, textPaint);
+				}
 			}
 		}
 	}
