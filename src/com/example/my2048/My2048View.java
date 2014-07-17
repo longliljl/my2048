@@ -1,5 +1,7 @@
 package com.example.my2048;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import android.content.Context;
@@ -9,6 +11,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,6 +26,7 @@ import android.view.ViewConfiguration;
 public class My2048View extends View {
 	private enum State{
 		FAILL,  //失败
+		ANIMATION,  //合并动画
 		RUNNING  //运行
 	}
 	private enum Directory {
@@ -30,6 +35,7 @@ public class My2048View extends View {
 	private static final int TOTAL_ROW = 4; // 行
 	private static final int TOTAL_COL = 4; // 列
 	private static final int SPACE = 15; // 行和列之间的间隙
+	private static final int ANGLE_SPEED = 45;
 	
 	private int mViewWidth; // View的宽度
 	private int mViewHeight; // View的高度
@@ -44,6 +50,7 @@ public class My2048View extends View {
 	private int count = 0;   //方格占用数
 	private int score = 0;   //分数
 	private boolean isMoved = false;
+	private int angler = 0;
 	private SharedPreferences sharedPreference;
 	private GameChangeListener gameChangeListener;
 	
@@ -64,11 +71,27 @@ public class My2048View extends View {
 	};
 
 	private int[][] datas = new int[TOTAL_ROW][TOTAL_COL];
-
+	private int[][] animationData = new int[TOTAL_ROW][TOTAL_COL];
+	private RefreshHandler refreshHandler = new RefreshHandler();
 	public interface GameChangeListener{
 		public void onChangedGameOver(int score, int maxScore);
 		public void onChangedScore(int score);
 	}
+	
+	class RefreshHandler extends Handler{
+		@Override
+		public void handleMessage(Message msg) {
+			My2048View.this.update();
+			My2048View.this.invalidate();
+		}
+		
+		public void sleep(long delayMillis){
+			this.removeMessages(0);
+			sendMessageDelayed(obtainMessage(0), delayMillis);
+		}
+		
+	}
+	
 	public My2048View(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		paint = new Paint();
@@ -93,6 +116,28 @@ public class My2048View extends View {
 			}
 		}
 		randomOneOrTwo();
+	}
+	
+	private void update(){
+		if(currentState == State.ANIMATION){
+			angler = angler + ANGLE_SPEED;
+			System.out.println("angler = " + angler);
+			if(angler > 180){
+				angler = 0;
+				currentState = State.RUNNING;
+				clearAnimationData();
+			}else{
+				refreshHandler.sleep(100);
+			}
+		}
+	}
+	
+	private void clearAnimationData(){
+		for (int i = 0; i < TOTAL_ROW; i++) {
+			for (int j = 0; j < TOTAL_COL; j++) {
+				animationData[i][j] = 0;
+			}
+		}
 	}
 	
 	public void setOnGameChangeListener(GameChangeListener gameChangeListener){
@@ -148,6 +193,10 @@ public class My2048View extends View {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		//如果当前状态是动画状态则返回
+		if(currentState == State.ANIMATION){
+			return false;
+		}
 		switch (event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
 			mDownX = event.getX();
@@ -164,7 +213,6 @@ public class My2048View extends View {
 			float disX = event.getX() - mDownX;
 			float disY = event.getY() - mDownY;
 			if (Math.abs(disX) > touchSlop || Math.abs(disY) > touchSlop) {
-				System.out.println("isMove");
 				isMoved = true;
 				if (Math.abs(disX) > Math.abs(disY)) {
 					if (disX > 0) {
@@ -207,6 +255,9 @@ public class My2048View extends View {
 			toRight();
 			break;
 		}
+		if(currentState == State.ANIMATION){
+			update();
+		}
 	}
 
 	/*
@@ -222,8 +273,10 @@ public class My2048View extends View {
 						datas[k][i] = datas[k][i] + 1;
 						datas[k + 1][i] = 0;
 						score = score + (int)Math.pow(2, datas[k][i]);
+						animationData[k][i] = datas[k][i];
 						gameChangeListener.onChangedScore(score);
-						count--;
+						count--;	
+						currentState = State.ANIMATION; //设置当前状态为动画
 					}
 				}
 			}
@@ -261,6 +314,8 @@ public class My2048View extends View {
 						score = score + (int)Math.pow(2, datas[k][i]);
 						gameChangeListener.onChangedScore(score);
 						count--;
+						animationData[k][i] = datas[k][i];
+						currentState = State.ANIMATION; //设置当前状态为动画
 					}
 				}
 			}
@@ -295,6 +350,8 @@ public class My2048View extends View {
 						score = score + (int)Math.pow(2, datas[i][k]);
 						gameChangeListener.onChangedScore(score);
 						count--;
+						animationData[i][k] = datas[i][k];
+						currentState = State.ANIMATION; //设置当前状态为动画
 					}
 				}
 			}
@@ -330,6 +387,8 @@ public class My2048View extends View {
 						score = score + (int)Math.pow(2, datas[i][k]);
 						gameChangeListener.onChangedScore(score);
 						count--;
+						animationData[i][k] = datas[i][k];
+						currentState = State.ANIMATION; //设置当前状态为动画
 					}
 				}
 			}
@@ -372,7 +431,7 @@ public class My2048View extends View {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		String showNum;
-		if(currentState == State.RUNNING){
+		if(currentState == State.RUNNING || currentState == State.ANIMATION){
 			for (int i = 0; i < TOTAL_ROW; i++) {
 				for (int j = 0; j < TOTAL_COL; j++) {
 					pointX = SPACE * (j + 1) + j * cellSpace;
@@ -381,7 +440,14 @@ public class My2048View extends View {
 					rectf.set(pointX, pointY, pointX + cellSpace, pointY
 							+ cellSpace);
 					paint.setColor(colors[datas[i][j]]);
-					canvas.drawRect(rectf, paint);
+					if(currentState == State.ANIMATION && datas[i][j] != 0 && animationData[i][j] != 0){
+						canvas.save();
+						canvas.rotate(angler, pointX + cellSpace / 2, pointY + cellSpace / 2);
+						canvas.drawRect(rectf, paint);
+						canvas.restore();
+					}else{
+						canvas.drawRect(rectf, paint);
+					}
 	
 					if (datas[i][j] != 0) {
 						// 绘制数字
