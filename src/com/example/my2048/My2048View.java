@@ -30,7 +30,7 @@ public class My2048View extends View {
 		RUNNING  //运行
 	}
 	private enum Directory {
-		LEFT, RIGHT, BOTTOM, TOP
+		LEFT, RIGHT, BOTTOM, TOP, NONE
 	}
 	private static final int TOTAL_ROW = 4; // 行
 	private static final int TOTAL_COL = 4; // 列
@@ -46,7 +46,9 @@ public class My2048View extends View {
 	private RectF rectf;
 	private Random random;
 	private int touchSlop;
-	private Directory currentDirectory; // 当前方向
+	private Directory currentDirectory = Directory.NONE; // 当前方向
+	private Directory oldDirectory;  //上一次方向
+	private boolean isLocked = true;
 	private int count = 0;   //方格占用数
 	private int score = 0;   //分数
 	private boolean isMoved = false;
@@ -168,9 +170,92 @@ public class My2048View extends View {
 		if (datas[row][col] != 0) {
 			randomOneOrTwo();
 		} else {
-			datas[row][col] = random.nextInt(2) + 1;
-			count++;
+			setIsLocked(row, col, random.nextInt(2) + 1);
 		}
+	}
+	
+	private void setIsLocked(int row, int col, int randomData){
+		isLocked = true;
+		switch (currentDirectory) {
+		case LEFT:
+			if(col != 0 && datas[row][col - 1] == randomData){
+				isLocked = false;
+			}
+			for(int i=0; i<col; i++){
+				if(datas[row][i] == 0){
+					isLocked = false;
+					break;
+				}
+			}
+			for(int i=0; i< TOTAL_ROW; i++){
+				for(int j = 0; j < TOTAL_COL -1; j++){
+					if(datas[i][j] != 0 && datas[i][j] == datas[i][j+1]){
+						isLocked = false;
+						break;
+					}
+				}
+			}
+			break;
+		case RIGHT:
+			if(col != TOTAL_COL - 1 && datas[row][col + 1] == randomData){
+				isLocked = false;
+			}
+			for(int i= col + 1; i < TOTAL_COL; i++){
+				if(datas[row][i] == 0){
+					isLocked = false;
+					break;
+				}
+			}
+			for(int i=0; i< TOTAL_ROW; i++){
+				for(int j = 0; j < TOTAL_COL - 1; j++){
+					if(datas[i][j] != 0 && datas[i][j] == datas[i][j+1]){
+						isLocked = false;
+						break;
+					}
+				}
+			}
+			break;
+		case TOP:
+			if(row != 0 && datas[row - 1][col] == randomData){
+				isLocked = false;
+			}
+			for(int i=0; i<row; i++){
+				if(datas[i][col] == 0){
+					isLocked = false;
+					break;
+				}
+			}
+			for(int i=0; i< TOTAL_COL; i++){
+				for(int j=0; j<TOTAL_ROW  - 1; j++){
+					if(datas[j][i] != 0 && datas[j][i] == datas[j+1][i]){
+						isLocked = false;
+						break;
+					}
+				}
+			}
+			break;
+		case BOTTOM:
+			if(row != TOTAL_ROW - 1 && datas[row + 1][col] == randomData){
+				isLocked = false;
+			}
+			for(int i= row + 1; i < TOTAL_ROW; i++){
+				if(datas[i][col] == 0){
+					isLocked = false;
+					break;
+				}
+			}
+			for(int i=0; i< TOTAL_COL; i++){
+				for(int j=0; j<TOTAL_ROW  - 1; j++){
+					if(datas[j][i] != 0 && datas[j][i] == datas[j+1][i]){
+						isLocked = false;
+						break;
+					}
+				}
+			}
+			break;
+		}
+		datas[row][col] = randomData;
+		count++;
 	}
 
 	@Override
@@ -199,6 +284,7 @@ public class My2048View extends View {
 		}
 		switch (event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
+			oldDirectory = currentDirectory;
 			mDownX = event.getX();
 			mDownY = event.getY();
 			if(currentState == State.FAILL){
@@ -230,11 +316,20 @@ public class My2048View extends View {
 			}
 			return true;
 		case MotionEvent.ACTION_UP:
-			if (isMoved == true) {
-				changeState();
-				randomOneOrTwo();
-				invalidate();
-				isMoved = false;
+			if (isMoved) {
+				System.out.println(oldDirectory);
+				System.out.println(currentDirectory);
+				if(oldDirectory != currentDirectory){
+					changeState();
+					randomOneOrTwo();
+					invalidate();
+					isMoved = false;
+				}else if(!isLocked){
+					changeState();
+					randomOneOrTwo();
+					invalidate();
+					isMoved = false;
+				}
 			}
 		}
 		return super.onTouchEvent(event);
@@ -265,18 +360,20 @@ public class My2048View extends View {
 	 */
 	private void toTop() {
 		moveTop();
-		// 合并数字
 		for (int i = 0; i < TOTAL_COL; i++) {
 			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = 0; k < TOTAL_ROW - j - 1; k++) {
-					if (datas[k][i] != 0 && datas[k][i] == datas[k + 1][i]) {
-						datas[k][i] = datas[k][i] + 1;
-						datas[k + 1][i] = 0;
-						score = score + (int)Math.pow(2, datas[k][i]);
-						animationData[k][i] = datas[k][i];
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[k][i] != 0 && datas[k][i] == datas[k - 1][i]) {
+						datas[k - 1][i] = datas[k - 1][i] + 1;
+						datas[k][i] = 0;
+						score = score + (int)Math.pow(2, datas[k - 1][i]);
 						gameChangeListener.onChangedScore(score);
-						count--;	
+						count--;
+						animationData[k - 1][i] = datas[k - 1][i];
 						currentState = State.ANIMATION; //设置当前状态为动画
+						//退出最内两层循环
+						k = j + 1;
+						j = TOTAL_ROW;
 					}
 				}
 			}
@@ -304,18 +401,20 @@ public class My2048View extends View {
 	 */
 	private void toBottom() {
 		moveBottom();
-		// 合并数字
+
 		for (int i = 0; i < TOTAL_COL; i++) {
 			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[k][i] != 0 && datas[k][i] == datas[k - 1][i]) {
-						datas[k][i] = datas[k][i] + 1;
-						datas[k - 1][i] = 0;
-						score = score + (int)Math.pow(2, datas[k][i]);
+				for (int k = 0; k < TOTAL_ROW - j - 1; k++) {
+					if (datas[k][i] != 0 && datas[k][i] == datas[k + 1][i]) {
+						datas[k + 1][i] = datas[k + 1][i] + 1;
+						datas[k][i] = 0;
+						score = score + (int)Math.pow(2, datas[k + 1][i]);
+						animationData[k + 1][i] = datas[k + 1][i];
 						gameChangeListener.onChangedScore(score);
-						count--;
-						animationData[k][i] = datas[k][i];
+						count--;	
 						currentState = State.ANIMATION; //设置当前状态为动画
+						k = TOTAL_ROW - j - 2;
+						j = TOTAL_ROW;
 					}
 				}
 			}
@@ -340,18 +439,20 @@ public class My2048View extends View {
 
 	private void toLeft() {
 		moveLeft();
-		// 合并数字
 		for (int i = 0; i < TOTAL_ROW; i++) {
 			for (int j = 0; j < TOTAL_COL; j++) {
-				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
-					if (datas[i][k] != 0 && datas[i][k] == datas[i][k + 1]) {
-						datas[i][k] = datas[i][k] + 1;
-						datas[i][k + 1] = 0;
-						score = score + (int)Math.pow(2, datas[i][k]);
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[i][k] != 0 && datas[i][k] == datas[i][k - 1]) {
+						datas[i][k - 1] = datas[i][k - 1] + 1;
+						datas[i][k] = 0;
+						score = score + (int)Math.pow(2, datas[i][k - 1]);
 						gameChangeListener.onChangedScore(score);
 						count--;
-						animationData[i][k] = datas[i][k];
+						animationData[i][k - 1] = datas[i][k - 1];
 						currentState = State.ANIMATION; //设置当前状态为动画
+						//退出最内两层循环
+						k = j + 1;
+						j = TOTAL_ROW;
 					}
 				}
 			}
@@ -377,18 +478,20 @@ public class My2048View extends View {
 
 	private void toRight() {
 		moveRight();
-		// 合并数字
+
 		for (int i = 0; i < TOTAL_ROW; i++) {
 			for (int j = 0; j < TOTAL_COL; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[i][k] != 0 && datas[i][k] == datas[i][k - 1]) {
-						datas[i][k] = datas[i][k] + 1;
-						datas[i][k - 1] = 0;
-						score = score + (int)Math.pow(2, datas[i][k]);
+				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
+					if (datas[i][k] != 0 && datas[i][k] == datas[i][k + 1]) {
+						datas[i][k + 1] = datas[i][k + 1] + 1;
+						datas[i][k] = 0;
+						score = score + (int)Math.pow(2, datas[i][k + 1]);
 						gameChangeListener.onChangedScore(score);
 						count--;
-						animationData[i][k] = datas[i][k];
+						animationData[i][k + 1] = datas[i][k + 1];
 						currentState = State.ANIMATION; //设置当前状态为动画
+						k = TOTAL_ROW - j - 2;
+						j = TOTAL_ROW;
 					}
 				}
 			}
