@@ -213,8 +213,26 @@ public class My2048View extends View {
 	 * 向上移动
 	 */
 	private void toTop() {
+		moveTop();
+		// 合并数字
+		for (int i = 0; i < TOTAL_COL; i++) {
+			for (int j = 0; j < TOTAL_ROW; j++) {
+				for (int k = 0; k < TOTAL_ROW - j - 1; k++) {
+					if (datas[k][i] != 0 && datas[k][i] == datas[k + 1][i]) {
+						datas[k][i] = datas[k][i] + 1;
+						datas[k + 1][i] = 0;
+						score = score + (int)Math.pow(2, datas[k][i]);
+						gameChangeListener.onChangedScore(score);
+						count--;
+					}
+				}
+			}
+		}
+		moveTop();
+	}
+	
+	private void moveTop(){
 		int temp;
-		// 向上移动
 		for (int i = 0; i < TOTAL_COL; i++) {
 			for (int j = 0; j < TOTAL_ROW; j++) {
 				for (int k = 0; k < TOTAL_ROW - j - 1; k++) {
@@ -226,16 +244,108 @@ public class My2048View extends View {
 				}
 			}
 		}
+	}
+
+	/*
+	 * 向下移动
+	 */
+	private void toBottom() {
+		moveBottom();
 		// 合并数字
 		for (int i = 0; i < TOTAL_COL; i++) {
 			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = 0; k < TOTAL_ROW - j - 1; k++) {
-					if (datas[k][i] != 0 && datas[k][i] == datas[k + 1][i]) {
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[k][i] != 0 && datas[k][i] == datas[k - 1][i]) {
 						datas[k][i] = datas[k][i] + 1;
-						datas[k + 1][i] = 0;
+						datas[k - 1][i] = 0;
 						score = score + (int)Math.pow(2, datas[k][i]);
 						gameChangeListener.onChangedScore(score);
 						count--;
+					}
+				}
+			}
+		}
+		moveBottom();
+	}
+	
+	private void moveBottom(){
+		int temp;
+		for (int i = 0; i < TOTAL_COL; i++) {
+			for (int j = 0; j < TOTAL_ROW; j++) {
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[k][i] == 0) {
+						temp = datas[k][i];
+						datas[k][i] = datas[k - 1][i];
+						datas[k - 1][i] = temp;
+					}
+				}
+			}
+		}
+	}
+
+	private void toLeft() {
+		moveLeft();
+		// 合并数字
+		for (int i = 0; i < TOTAL_ROW; i++) {
+			for (int j = 0; j < TOTAL_COL; j++) {
+				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
+					if (datas[i][k] != 0 && datas[i][k] == datas[i][k + 1]) {
+						datas[i][k] = datas[i][k] + 1;
+						datas[i][k + 1] = 0;
+						score = score + (int)Math.pow(2, datas[i][k]);
+						gameChangeListener.onChangedScore(score);
+						count--;
+					}
+				}
+			}
+		}
+		moveLeft();
+	}
+	
+	private void moveLeft(){
+		int temp;
+		// 向左移动
+		for (int i = 0; i < TOTAL_ROW; i++) {
+			for (int j = 0; j < TOTAL_COL; j++) {
+				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
+					if (datas[i][k] == 0) {
+						temp = datas[i][k];
+						datas[i][k] = datas[i][k + 1];
+						datas[i][k + 1] = temp;
+					}
+				}
+			}
+		}
+	}
+
+	private void toRight() {
+		moveRight();
+		// 合并数字
+		for (int i = 0; i < TOTAL_ROW; i++) {
+			for (int j = 0; j < TOTAL_COL; j++) {
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[i][k] != 0 && datas[i][k] == datas[i][k - 1]) {
+						datas[i][k] = datas[i][k] + 1;
+						datas[i][k - 1] = 0;
+						score = score + (int)Math.pow(2, datas[i][k]);
+						gameChangeListener.onChangedScore(score);
+						count--;
+					}
+				}
+			}
+		}
+		moveRight();
+	}
+	
+	private void moveRight(){
+		int temp;
+		for (int i = 0; i < TOTAL_COL; i++) {
+			for (int j = 0; j < TOTAL_ROW; j++) {
+				for (int k = TOTAL_ROW - 1; k > j; k--) {
+					if (datas[i][k] == 0) {
+						temp = datas[i][k];
+						datas[i][k] = datas[i][k - 1];
+						datas[i][k - 1] = temp;
 					}
 				}
 			}
@@ -251,97 +361,6 @@ public class My2048View extends View {
 				Editor edit = sharedPreference.edit();
 				edit.putInt("maxScore", score);
 				edit.commit();
-			}
-		}
-	}
-
-	/*
-	 * 向下移动
-	 */
-	private void toBottom() {
-		int temp;
-		for (int i = 0; i < TOTAL_COL; i++) {
-			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[k][i] == 0) {
-						temp = datas[k][i];
-						datas[k][i] = datas[k - 1][i];
-						datas[k - 1][i] = temp;
-					}
-				}
-			}
-		}
-		// 合并数字
-		for (int i = 0; i < TOTAL_COL; i++) {
-			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[k][i] != 0 && datas[k][i] == datas[k - 1][i]) {
-						datas[k][i] = datas[k][i] + 1;
-						datas[k - 1][i] = 0;
-						score = score + (int)Math.pow(2, datas[k][i]);
-						gameChangeListener.onChangedScore(score);
-						count--;
-					}
-				}
-			}
-		}
-	}
-
-	private void toLeft() {
-		int temp;
-		// 向左移动
-		for (int i = 0; i < TOTAL_ROW; i++) {
-			for (int j = 0; j < TOTAL_COL; j++) {
-				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
-					if (datas[i][k] == 0) {
-						temp = datas[i][k];
-						datas[i][k] = datas[i][k + 1];
-						datas[i][k + 1] = temp;
-					}
-				}
-			}
-		}
-		// 合并数字
-		for (int i = 0; i < TOTAL_ROW; i++) {
-			for (int j = 0; j < TOTAL_COL; j++) {
-				for (int k = 0; k < TOTAL_COL - j - 1; k++) {
-					if (datas[i][k] != 0 && datas[i][k] == datas[i][k + 1]) {
-						datas[i][k] = datas[i][k] + 1;
-						datas[i][k + 1] = 0;
-						score = score + (int)Math.pow(2, datas[i][k]);
-						gameChangeListener.onChangedScore(score);
-						count--;
-					}
-				}
-			}
-		}
-	}
-
-	private void toRight() {
-		int temp;
-		for (int i = 0; i < TOTAL_COL; i++) {
-			for (int j = 0; j < TOTAL_ROW; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[i][k] == 0) {
-						temp = datas[i][k];
-						datas[i][k] = datas[i][k - 1];
-						datas[i][k - 1] = temp;
-					}
-				}
-			}
-		}
-		// 合并数字
-		for (int i = 0; i < TOTAL_ROW; i++) {
-			for (int j = 0; j < TOTAL_COL; j++) {
-				for (int k = TOTAL_ROW - 1; k > j; k--) {
-					if (datas[i][k] != 0 && datas[i][k] == datas[i][k - 1]) {
-						datas[i][k] = datas[i][k] + 1;
-						datas[i][k - 1] = 0;
-						score = score + (int)Math.pow(2, datas[i][k]);
-						gameChangeListener.onChangedScore(score);
-						count--;
-					}
-				}
 			}
 		}
 	}
