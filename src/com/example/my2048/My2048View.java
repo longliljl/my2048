@@ -1,7 +1,5 @@
 package com.example.my2048;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import android.content.Context;
@@ -11,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
@@ -523,6 +522,44 @@ public class My2048View extends View {
 				edit.commit();
 			}
 		}
+	}
+	
+	/**
+	 * 保存数据
+	 */
+	public void saveMaxScore(){
+		int maxScore = sharedPreference.getInt("maxScore", 0);
+		if(score > maxScore){
+			Editor edit = sharedPreference.edit();
+			edit.putInt("maxScore", score);
+			edit.commit();
+		}
+	}
+	
+	/**
+	 * 保存数据和状态
+	 * @return
+	 */
+	public Bundle saveDataAndState(){
+		Bundle map = new Bundle();
+		map.putIntArray("row1", datas[0]);
+		map.putIntArray("row2", datas[1]);
+		map.putIntArray("row3", datas[2]);
+		map.putIntArray("row4", datas[3]);
+		map.putSerializable("currentDirectory", currentDirectory);
+		return map;
+	}
+	
+	/**
+	 * 取出保存的数据和状态
+	 * @param bundle
+	 */
+	public void restoreDataAndState(Bundle bundle){
+		datas[0] = bundle.getIntArray("row1");
+		datas[1] = bundle.getIntArray("row2");
+		datas[2] = bundle.getIntArray("row3");
+		datas[3] = bundle.getIntArray("row4");
+		currentDirectory = (Directory) bundle.getSerializable("currentDirectory");
 	}
 
 	private float pointX;
