@@ -5,10 +5,12 @@ import java.util.Random;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -56,8 +58,10 @@ public class My2048View extends View {
 	private GameChangeListener gameChangeListener;
 	
 	private State currentState = State.RUNNING;
+	
+	private BitmapDrawable bitmapDrawable;
 
-	private int[] colors = { Color.rgb(204, 192, 178), // 1
+/*	private int[] colors = { Color.rgb(204, 192, 178), // 1
 			Color.rgb(253, 235, 213), // 2
 			Color.rgb(252, 224, 174), // 4
 			Color.rgb(255, 95, 95), // 8
@@ -69,7 +73,24 @@ public class My2048View extends View {
 			Color.rgb(219, 19, 19), // 562
 			Color.rgb(211, 10, 10), // 1024
 			Color.rgb(204, 0, 0) // 2048
+	};*/
+	
+	private int[] drawables = {
+		R.drawable.lol_0,
+		R.drawable.lol_1,	
+		R.drawable.lol_2,
+		R.drawable.lol_3,
+		R.drawable.lol_4,
+		R.drawable.lol_5,
+		R.drawable.lol_6,
+		R.drawable.lol_7,
+		R.drawable.lol_8,
+		R.drawable.lol_9,
+		R.drawable.lol_10,
+		R.drawable.lol_11,
 	};
+	
+	private Bitmap[] bitmaps = new Bitmap[drawables.length];
 
 	private int[][] datas = new int[TOTAL_ROW][TOTAL_COL];
 	private int[][] animationData = new int[TOTAL_ROW][TOTAL_COL];
@@ -101,7 +122,15 @@ public class My2048View extends View {
 		random = new Random();
 		touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 		sharedPreference = context.getSharedPreferences("my2048", context.MODE_PRIVATE);
+		initBitmap();
 		initData();
+	}
+	
+	private void initBitmap(){
+		for(int i=0; i<drawables.length; i++){
+			bitmapDrawable = (BitmapDrawable)getResources().getDrawable(drawables[i]);
+			bitmaps[i] = bitmapDrawable.getBitmap();
+		}
 	}
 
 	/**
@@ -577,20 +606,22 @@ public class My2048View extends View {
 					// 绘制背景
 					rectf.set(pointX, pointY, pointX + cellSpace, pointY
 							+ cellSpace);
-					paint.setColor(colors[datas[i][j]]);
+					//paint.setColor(colors[datas[i][j]]);
 					if(currentState == State.ANIMATION && datas[i][j] != 0 && animationData[i][j] != 0){
 						canvas.save();
 						canvas.rotate(angler, pointX + cellSpace / 2, pointY + cellSpace / 2);
-						canvas.drawRect(rectf, paint);
+						//canvas.drawRect(rectf, paint);
+						canvas.drawBitmap(bitmaps[datas[i][j]], null, rectf, paint);
 						canvas.restore();
 					}else{
-						canvas.drawRect(rectf, paint);
+						//canvas.drawRect(rectf, paint);
+						canvas.drawBitmap(bitmaps[datas[i][j]], null, rectf, paint);
 					}
 	
-					if (datas[i][j] != 0) {
+/*					if (datas[i][j] != 0) {
 						// 绘制数字
 						if (datas[i][j] == 1 || datas[i][j] == 2) {
-							textPaint.setColor(Color.rgb(0, 0, 0));
+							textPaint.setColor(Color.rgb(255,255,0));
 						} else {
 							textPaint.setColor(Color.rgb(255, 255, 255));
 						}
@@ -599,13 +630,13 @@ public class My2048View extends View {
 								showNum,
 								pointX + (cellSpace - textPaint.measureText(showNum)) / 2,
 								pointY+ (cellSpace + textPaint.measureText(showNum, 0, 1)) / 2, textPaint);
-					}
+					}*/
 				}
 			}
 		}
 		if(currentState == State.FAILL){
 			rectf.set(0 , mViewHeight - cellSpace, mViewWidth, mViewHeight);
-			paint.setColor(colors[5]);
+			paint.setColor(Color.rgb(248, 58, 58));
 			canvas.drawRect(rectf, paint);
 			textPaint.setColor(Color.rgb(255, 255, 255));
 			canvas.drawText("游戏结束", (mViewWidth - textPaint.measureText("游戏结束")) / 2, mViewHeight / 2, textPaint);
