@@ -1,5 +1,6 @@
 package com.example.my2048;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import android.content.Context;
@@ -11,6 +12,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -42,6 +45,7 @@ public class My2048View extends View {
 	private int mViewHeight; // View的高度
 	private float cellSpace; // 每个格子的大小
 
+	private Context context;
 	private Paint paint;
 	private Paint textPaint;
 	private RectF rectf;
@@ -56,10 +60,14 @@ public class My2048View extends View {
 	private int angler = 0;
 	private SharedPreferences sharedPreference;
 	private GameChangeListener gameChangeListener;
-	
+	private SoundPool soundPool;
+	private HashMap<Integer, Integer> spMap;
 	private State currentState = State.RUNNING;
+	private int currentSound = 0;
+	private boolean soundOpend = true;
 	
 	private BitmapDrawable bitmapDrawable;
+
 
 /*	private int[] colors = { Color.rgb(204, 192, 178), // 1
 			Color.rgb(253, 235, 213), // 2
@@ -116,14 +124,40 @@ public class My2048View extends View {
 	
 	public My2048View(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		this.context = context;
 		paint = new Paint();
 		textPaint = new Paint();
 		rectf = new RectF();
 		random = new Random();
 		touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 		sharedPreference = context.getSharedPreferences("my2048", context.MODE_PRIVATE);
+		initSoundPool();
 		initBitmap();
 		initData();
+	}
+	
+	private void initSoundPool(){
+		soundPool = new SoundPool(11, AudioManager.STREAM_MUSIC, 0);
+		spMap = new HashMap<Integer, Integer>();
+		spMap.put(1, soundPool.load(context, R.raw.doub_kill, 1));
+		spMap.put(2, soundPool.load(context, R.raw.trib_kill, 1));
+		spMap.put(3, soundPool.load(context, R.raw.quadra_kill, 1));
+		spMap.put(4, soundPool.load(context, R.raw.panta_kill, 1));
+	}
+	
+	private void playSound(int sound,int number){
+		AudioManager am = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
+		float audioMaxVolumn=am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);  //返回当前AudioManager对象的最大音量值  
+        float audioCurrentVolumn=am.getStreamVolume(AudioManager.STREAM_MUSIC);//返回当前AudioManager对象的音量值  
+        float volumnRatio=audioCurrentVolumn/audioMaxVolumn;  
+        soundPool.play(  
+                spMap.get(sound),                   //播放的音乐id  
+                volumnRatio,                        //左声道音量  
+                volumnRatio,                        //右声道音量  
+                1,                                  //优先级，0为最低  
+                number,                             //循环次数，0无不循环，-1无永远循环  
+                1                                   //回放速度 ，该值在0.5-2.0之间，1为正常速度  
+        );  
 	}
 	
 	private void initBitmap(){
@@ -174,6 +208,10 @@ public class My2048View extends View {
 		this.gameChangeListener = gameChangeListener;
 		gameChangeListener.onChangedGameOver(score, sharedPreference.getInt("maxScore", 0));
 		gameChangeListener.onChangedScore(score);
+	}
+	
+	public void setSoundState(boolean isOpened){
+		soundOpend = isOpened;
 	}
 
 	/**
@@ -351,11 +389,21 @@ public class My2048View extends View {
 					changeState();
 					randomOneOrTwo();
 					invalidate();
+					if(soundOpend){
+						soundPool.stop(currentSound);
+						currentSound = random.nextInt(spMap.size()) + 1;
+						playSound(currentSound, 0);
+					}
 					isMoved = false;
 				}else if(!isLocked){
 					changeState();
 					randomOneOrTwo();
 					invalidate();
+					if(soundOpend){
+						soundPool.stop(currentSound);
+						currentSound = random.nextInt(spMap.size()) + 1;
+						playSound(currentSound, 0);
+					}
 					isMoved = false;
 				}
 			}
